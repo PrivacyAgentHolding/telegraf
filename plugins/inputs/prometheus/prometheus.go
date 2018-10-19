@@ -31,6 +31,8 @@ type Prometheus struct {
 
 	AcceptHeader string `toml:"accept_header"`
 
+	IgnoreAccept   bool `toml:"accept_ignore"`
+
 	ResponseTimeout internal.Duration `toml:"response_timeout"`
 
 	tls.ClientConfig
@@ -193,10 +195,14 @@ func (p *Prometheus) gatherURL(u URLAndAddress, acc telegraf.Accumulator) error 
 		req.Header.Set("Authorization", "Bearer "+string(token))
 	}
 
-	if p.AcceptHeader != "" {
-		req.Header.Add("Accept", p.AcceptHeader)
-	} else {
-		req.Header.Add("Accept", acceptHeader)
+	// If IgnoreAccept is explicitly set to true, we don't
+	// add an accept header
+	if !p.IgnoreAccept {
+		if p.AcceptHeader != "" {
+			req.Header.Add("Accept", p.AcceptHeader)
+		} else {
+			req.Header.Add("Accept", acceptHeader)
+		}
 	}
 
 	resp, err = p.client.Do(req)
