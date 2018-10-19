@@ -29,6 +29,8 @@ type Prometheus struct {
 	// Bearer Token authorization file path
 	BearerToken string `toml:"bearer_token"`
 
+	AcceptHeader string `toml:"accept_header"`
+
 	ResponseTimeout internal.Duration `toml:"response_timeout"`
 
 	tls.ClientConfig
@@ -179,7 +181,7 @@ func (p *Prometheus) createHttpClient() (*http.Client, error) {
 
 func (p *Prometheus) gatherURL(u URLAndAddress, acc telegraf.Accumulator) error {
 	var req, err = http.NewRequest("GET", u.URL.String(), nil)
-	req.Header.Add("Accept", acceptHeader)
+
 	var token []byte
 	var resp *http.Response
 
@@ -189,6 +191,12 @@ func (p *Prometheus) gatherURL(u URLAndAddress, acc telegraf.Accumulator) error 
 			return err
 		}
 		req.Header.Set("Authorization", "Bearer "+string(token))
+	}
+
+	if p.AcceptHeader != "" {
+		req.Header.Add("Accept", p.AcceptHeader)
+	} else {
+		req.Header.Add("Accept", acceptHeader)
 	}
 
 	resp, err = p.client.Do(req)
